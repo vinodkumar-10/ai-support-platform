@@ -24,6 +24,11 @@ function App() {
   const [tickets, setTickets] = useState([])
   const [ticketsLoading, setTicketsLoading] = useState(true)
   const [ticketsError, setTicketsError] = useState(null)
+  const [title, setTitle] = useState('')
+  const [priority, setPriority] = useState('High')
+  const [customer, setCustomer] = useState('')
+  const [createTicketLoading, setCreateTicketLoading] = useState(false)
+  const [createTicketError, setCreateTicketError] = useState(null)
 
   useEffect(() => {
     fetch('http://localhost:5000/api/health')
@@ -54,6 +59,47 @@ function App() {
 
     fetchTickets()
   }, [])
+
+  const handleCreateTicket = async (event) => {
+    event.preventDefault()
+
+    if (!title.trim() || !customer.trim()) {
+      setCreateTicketError('Title and customer are required')
+      return
+    }
+
+    try {
+      setCreateTicketLoading(true)
+      setCreateTicketError(null)
+
+      const response = await fetch('http://localhost:5000/api/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          priority,
+          customer: customer.trim(),
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Unable to create ticket')
+      }
+
+      setTickets((currentTickets) => [...currentTickets, data.ticket])
+      setTitle('')
+      setPriority('High')
+      setCustomer('')
+    } catch (error) {
+      setCreateTicketError(error.message || 'Unable to create ticket')
+    } finally {
+      setCreateTicketLoading(false)
+    }
+  }
 
   return (
     <main className="landing-page">
@@ -93,7 +139,45 @@ function App() {
           </div>
         </div>
 
-        <div className="dashboard-preview">
+        <div className="hero-dashboard-column">
+          <form className="ticket-form" onSubmit={handleCreateTicket}>
+          <label htmlFor="ticket-title">Title</label>
+          <input
+            id="ticket-title"
+            type="text"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+          />
+
+          <label htmlFor="ticket-priority">Priority</label>
+          <select
+            id="ticket-priority"
+            value={priority}
+            onChange={(event) => setPriority(event.target.value)}
+          >
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+
+          <label htmlFor="ticket-customer">Customer</label>
+          <input
+            id="ticket-customer"
+            type="text"
+            value={customer}
+            onChange={(event) => setCustomer(event.target.value)}
+          />
+
+          <button type="submit" disabled={createTicketLoading}>
+            {createTicketLoading ? 'Creating...' : 'Create ticket'}
+          </button>
+
+          {createTicketError && (
+            <p className="tickets-message">{createTicketError}</p>
+          )}
+          </form>
+
+          <div className="dashboard-preview">
           <div className="preview-header">
             <span className="preview-logo">R</span>
             <span>Support overview</span>
@@ -139,6 +223,7 @@ function App() {
                 </div>
               </div>
             ))}
+          </div>
         </div>
       </section>
 
