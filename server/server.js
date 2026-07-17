@@ -48,6 +48,39 @@ app.get('/api/tickets', (req, res) => {
     tickets,
   })
 })
+
+app.post('/api/tickets', (req, res) => {
+  const { title, priority, customer } = req.body
+
+  if (!title || !priority || !customer) {
+    return res.status(400).json({
+      success: false,
+      message: 'Title, priority, and customer are required',
+    })
+  }
+
+  const highestTicketId = tickets.reduce(
+    (highestId, ticket) => Math.max(highestId, ticket.id),
+    0,
+  )
+
+  const newTicket = {
+    id: highestTicketId + 1,
+    title,
+    priority,
+    status: 'Open',
+    customer,
+    updatedAt: 'Just now',
+  }
+
+  tickets.push(newTicket)
+
+  res.status(201).json({
+    success: true,
+    ticket: newTicket,
+  })
+})
+
 app.listen(PORT, () => {
   console.log(`ResolveAI server running on http://localhost:${PORT}`)
 })
