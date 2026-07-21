@@ -81,6 +81,42 @@ app.post('/api/tickets', (req, res) => {
   })
 })
 
+app.put('/api/tickets/:id', (req, res) => {
+  // Read the ticket ID from the URL and convert it to a number.
+  const ticketId = Number(req.params.id)
+
+  // Read and validate the requested status.
+  const { status } = req.body
+  const allowedStatuses = ['Open', 'In Progress', 'Resolved']
+
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Status must be Open, In Progress, or Resolved',
+    })
+  }
+
+  // Find the ticket with the matching ID.
+  const ticket = tickets.find((ticket) => ticket.id === ticketId)
+
+  if (!ticket) {
+    return res.status(404).json({
+      success: false,
+      message: 'Ticket not found',
+    })
+  }
+
+  // Update only the ticket status and modification time.
+  ticket.status = status
+  ticket.updatedAt = 'Just now'
+
+  // Return the updated ticket.
+  return res.status(200).json({
+    success: true,
+    ticket,
+  })
+})
+
 app.listen(PORT, () => {
   console.log(`ResolveAI server running on http://localhost:${PORT}`)
 })
