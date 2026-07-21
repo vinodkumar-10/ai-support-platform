@@ -117,6 +117,32 @@ app.put('/api/tickets/:id', (req, res) => {
   })
 })
 
+app.delete('/api/tickets/:id', (req, res) => {
+  // Read the ticket ID from the URL and convert it to a number.
+  const ticketId = Number(req.params.id)
+
+  // Find the position of the ticket with the matching ID.
+  const ticketIndex = tickets.findIndex((ticket) => ticket.id === ticketId)
+
+  if (ticketIndex === -1) {
+    return res.status(404).json({
+      success: false,
+      message: 'Ticket not found',
+    })
+  }
+
+  // Store the ticket before removing it from the array.
+  const deletedTicket = tickets[ticketIndex]
+  tickets.splice(ticketIndex, 1)
+
+  // Return the deleted ticket.
+  return res.status(200).json({
+    success: true,
+    message: 'Ticket deleted successfully',
+    ticket: deletedTicket,
+  })
+})
+
 app.listen(PORT, () => {
   console.log(`ResolveAI server running on http://localhost:${PORT}`)
 })

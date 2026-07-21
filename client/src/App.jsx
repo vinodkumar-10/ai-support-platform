@@ -31,6 +31,8 @@ function App() {
   const [createTicketError, setCreateTicketError] = useState(null)
   const [updatingTicketId, setUpdatingTicketId] = useState(null)
   const [updateTicketError, setUpdateTicketError] = useState(null)
+  const [deletingTicketId, setDeletingTicketId] = useState(null)
+  const [deleteTicketError, setDeleteTicketError] = useState(null)
 
   useEffect(() => {
     fetch('http://localhost:5000/api/health')
@@ -140,6 +142,46 @@ function App() {
       )
     } finally {
       setUpdatingTicketId(null)
+    }
+  }
+
+  // Confirm and delete one ticket through the backend.
+  const handleDeleteTicket = async (ticketId) => {
+    const shouldDelete = window.confirm(
+      'Are you sure you want to delete this ticket?',
+    )
+
+    if (!shouldDelete) {
+      return
+    }
+
+    setDeletingTicketId(ticketId)
+    setDeleteTicketError(null)
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/tickets/${ticketId}`,
+        {
+          method: 'DELETE',
+        },
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Unable to delete ticket')
+      }
+
+      // Remove only the ticket that was successfully deleted.
+      setTickets((currentTickets) =>
+        currentTickets.filter((ticket) => ticket.id !== ticketId),
+      )
+    } catch (error) {
+      setDeleteTicketError(
+        error.message || 'Unable to delete ticket. Please try again.',
+      )
+    } finally {
+      setDeletingTicketId(null)
     }
   }
 
@@ -253,6 +295,10 @@ function App() {
             <p className="tickets-message">{updateTicketError}</p>
           )}
 
+          {deleteTicketError && (
+            <p className="tickets-message">{deleteTicketError}</p>
+          )}
+
           {!ticketsLoading &&
             !ticketsError &&
             tickets.map((ticket) => (
@@ -272,7 +318,10 @@ function App() {
                     onChange={(event) =>
                       handleStatusChange(ticket.id, event.target.value)
                     }
-                    disabled={updatingTicketId === ticket.id}
+                    disabled={
+                      updatingTicketId === ticket.id ||
+                      deletingTicketId === ticket.id
+                    }
                   >
                     <option value="Open">Open</option>
                     <option value="In Progress">In Progress</option>
@@ -282,6 +331,19 @@ function App() {
                   {updatingTicketId === ticket.id && (
                     <small>Updating...</small>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTicket(ticket.id)}
+                    disabled={
+                      deletingTicketId === ticket.id ||
+                      updatingTicketId === ticket.id
+                    }
+                  >
+                    {deletingTicketId === ticket.id
+                      ? 'Deleting...'
+                      : 'Delete'}
+                  </button>
                 </div>
               </div>
             ))}
