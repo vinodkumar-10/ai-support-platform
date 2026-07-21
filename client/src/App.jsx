@@ -29,6 +29,8 @@ function App() {
   const [customer, setCustomer] = useState('')
   const [createTicketLoading, setCreateTicketLoading] = useState(false)
   const [createTicketError, setCreateTicketError] = useState(null)
+  const [updatingTicketId, setUpdatingTicketId] = useState(null)
+  const [updateTicketError, setUpdateTicketError] = useState(null)
 
   useEffect(() => {
     fetch('http://localhost:5000/api/health')
@@ -98,6 +100,46 @@ function App() {
       setCreateTicketError(error.message || 'Unable to create ticket')
     } finally {
       setCreateTicketLoading(false)
+    }
+  }
+
+  // Update one ticket's status through the backend.
+  const handleStatusChange = async (ticketId, newStatus) => {
+    setUpdatingTicketId(ticketId)
+    setUpdateTicketError(null)
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/tickets/${ticketId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: newStatus,
+          }),
+        },
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Unable to update ticket status')
+      }
+
+      // Replace only the ticket returned by the backend.
+      setTickets((currentTickets) =>
+        currentTickets.map((ticket) =>
+          ticket.id === data.ticket.id ? data.ticket : ticket,
+        ),
+      )
+    } catch (error) {
+      setUpdateTicketError(
+        error.message || 'Unable to update ticket status. Please try again.',
+      )
+    } finally {
+      setUpdatingTicketId(null)
     }
   }
 
@@ -207,6 +249,10 @@ function App() {
             <p className="tickets-message">No tickets available.</p>
           )}
 
+          {updateTicketError && (
+            <p className="tickets-message">{updateTicketError}</p>
+          )}
+
           {!ticketsLoading &&
             !ticketsError &&
             tickets.map((ticket) => (
@@ -220,6 +266,22 @@ function App() {
                 <div>
                   <strong>{ticket.title}</strong>
                   <p>Updated {ticket.updatedAt}</p>
+
+                  <select
+                    value={ticket.status}
+                    onChange={(event) =>
+                      handleStatusChange(ticket.id, event.target.value)
+                    }
+                    disabled={updatingTicketId === ticket.id}
+                  >
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                  </select>
+
+                  {updatingTicketId === ticket.id && (
+                    <small>Updating...</small>
+                  )}
                 </div>
               </div>
             ))}
